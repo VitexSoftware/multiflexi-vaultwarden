@@ -1,0 +1,12 @@
+vendor/
+.build/
+.phpunit.cache/
+composer.lock
+debian/debhelper-build-stamp
+debian/*.debhelper
+debian/*.debhelper.log
+debian/*.substvars
+debian/files
+debian/tmp/
+debian/multiflexi-vaultwarden/
+debian/multiflexi-vaultwarden-ui/

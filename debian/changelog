@@ -1,0 +1,8 @@
+multiflexi-vaultwarden (2.0.0) UNRELEASED; urgency=medium
+
+  * Split into separate source package from multiflexi
+  * Two binary packages: multiflexi-vaultwarden (core) and
+    multiflexi-vaultwarden-ui (web interface)
+  * postinst runs multiflexi-cli crprototype sync
+
+ -- "Vítězslav Dvořák" <info@vitexsoftware.cz>  Sat, 01 Mar 2026 12:00:00 +0100

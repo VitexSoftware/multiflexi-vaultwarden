@@ -1,0 +1,26 @@
+Source: multiflexi-vaultwarden
+Section: web
+Priority: optional
+Maintainer: "Vítězslav Dvořák" <info@vitexsoftware.cz>
+Build-Depends: debhelper-compat (=13)
+Standards-Version: 4.6.1
+Homepage: https://github.com/VitexSoftware/multiflexi-vaultwarden
+Rules-Requires-Root: no
+
+Package: multiflexi-vaultwarden
+Architecture: all
+Multi-Arch: foreign
+Depends: ${misc:Depends}, php-vitexsoftware-multiflexi-core, multiflexi-cli (>= 2.2.0), php-jalismrs-bitwarden
+Description: MultiFlexi VaultWarden credential prototype
+ VaultWarden/Bitwarden secrets credential prototype for MultiFlexi core.
+ Provides the CredentialProtoType class that defines VaultWarden URL,
+ user login, password and folder configuration fields.
+
+Package: multiflexi-vaultwarden-ui
+Architecture: all
+Multi-Arch: foreign
+Depends: ${misc:Depends}, multiflexi-vaultwarden (= ${binary:Version}), multiflexi-web
+Description: MultiFlexi VaultWarden UI components
+ VaultWarden connection dialog for MultiFlexi web interface.
+ Tests server connectivity, authentication and folder access,
+ displays server information and lists vault items.
