@@ -1,2 +1,2 @@
 src/MultiFlexi/Ui/CredentialType/VaultWarden.php  usr/lib/multiflexi/MultiFlexi/Ui/CredentialType/
-src/images/vaultwarden.svg                        usr/share/multiflexi/images/
+src/images/vaultwarden.svg                        usr/share/multiflexi-web/images/
