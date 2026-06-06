@@ -20,7 +20,7 @@ Description: MultiFlexi VaultWarden credential prototype
 Package: multiflexi-vaultwarden-ui
 Architecture: all
 Multi-Arch: foreign
-Depends: ${misc:Depends}, multiflexi-vaultwarden (= ${binary:Version}), multiflexi-web
+Depends: ${misc:Depends}, multiflexi-vaultwarden (= ${binary:Version}), multiflexi-web|multiflexi-web5
 Description: MultiFlexi VaultWarden UI components
  VaultWarden connection dialog for MultiFlexi web interface.
  Tests server connectivity, authentication and folder access,
