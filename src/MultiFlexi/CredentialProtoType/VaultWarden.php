@@ -22,7 +22,7 @@ namespace MultiFlexi\CredentialProtoType;
  *
  * @no-named-arguments
  */
-class VaultWarden extends \MultiFlexi\CredentialProtoType implements \MultiFlexi\credentialTypeInterface
+class VaultWarden extends \MultiFlexi\CredentialProtoType implements \MultiFlexi\credentialTypeInterface, \MultiFlexi\checkableCredentialInterface
 {
     public function __construct()
     {
@@ -76,6 +76,59 @@ class VaultWarden extends \MultiFlexi\CredentialProtoType implements \MultiFlexi
     public static function logo(): string
     {
         return 'vaultwarden.svg';
+    }
+
+    public function checkAvailability(): \MultiFlexi\CredentialCheckResult
+    {
+        $url    = (string) ($this->configFieldsInternal->getFieldByCode('VAULTWARDEN_URL')?->getValue()      ?? '');
+        $email  = (string) ($this->configFieldsInternal->getFieldByCode('VAULTWARDEN_EMAIL')?->getValue()    ?? '');
+        $pass   = (string) ($this->configFieldsInternal->getFieldByCode('VAULTWARDEN_PASSWORD')?->getValue() ?? '');
+        $folder = (string) ($this->configFieldsInternal->getFieldByCode('VAULTWARDEN_FOLDER')?->getValue()   ?? '');
+
+        if ($url === '' || $email === '' || $pass === '') {
+            $missing = array_keys(array_filter([
+                'VAULTWARDEN_URL'      => $url   === '',
+                'VAULTWARDEN_EMAIL'    => $email === '',
+                'VAULTWARDEN_PASSWORD' => $pass  === '',
+            ]));
+
+            return new \MultiFlexi\CredentialCheckResult(
+                \MultiFlexi\CredentialState::Misconfigured,
+                sprintf(_('Required fields not set: %s'), implode(', ', $missing)),
+                time(),
+            );
+        }
+
+        try {
+            $delegate = new \MultiFlexi\BitwardenServiceDelegate($email, $pass, $url);
+            $service  = new \Jalismrs\Bitwarden\BitwardenService($delegate);
+            $items    = $service->searchItems($folder ?: 'MultiFlexi');
+        } catch (\Throwable $e) {
+            $msg = strtolower($e->getMessage());
+
+            if (str_contains($msg, 'unauthorized') || str_contains($msg, 'invalid') || str_contains($msg, 'credentials')) {
+                return new \MultiFlexi\CredentialCheckResult(
+                    \MultiFlexi\CredentialState::Misconfigured,
+                    sprintf(_('VaultWarden authentication failed: %s'), $e->getMessage()),
+                    time(),
+                );
+            }
+
+            return new \MultiFlexi\CredentialCheckResult(
+                \MultiFlexi\CredentialState::Unavailable,
+                sprintf(_('Cannot reach VaultWarden: %s'), $e->getMessage()),
+                time(),
+                60,
+            );
+        }
+
+        return new \MultiFlexi\CredentialCheckResult(
+            \MultiFlexi\CredentialState::Available,
+            '',
+            time(),
+            300,
+            ['items' => (string) \count($items)],
+        );
     }
 
     public function load(int $credTypeId)

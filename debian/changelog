@@ -1,3 +1,11 @@
+multiflexi-vaultwarden (2.1.0) UNRELEASED; urgency=medium
+
+  * VaultWarden prototype: add checkAvailability() — authenticates via
+    BitwardenServiceDelegate; maps auth failure → Misconfigured,
+    network errors → Unavailable, success → Available with item count
+
+ -- vitex <info@vitexsoftware.cz>  Sat, 14 Jun 2026 12:00:00 +0200
+
 multiflexi-vaultwarden (2.0.1) unstable; urgency=medium
 
   [ "Vítězslav Dvořák" ]
