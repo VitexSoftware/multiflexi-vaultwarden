@@ -83,15 +83,15 @@ class VaultWarden extends \MultiFlexi\CredentialProtoType implements \MultiFlexi
         $url    = (string) ($this->configFieldsInternal->getFieldByCode('VAULTWARDEN_URL')?->getValue()      ?? '');
         $email  = (string) ($this->configFieldsInternal->getFieldByCode('VAULTWARDEN_EMAIL')?->getValue()    ?? '');
         $pass   = (string) ($this->configFieldsInternal->getFieldByCode('VAULTWARDEN_PASSWORD')?->getValue() ?? '');
-        $folder = (string) ($this->configFieldsInternal->getFieldByCode('VAULTWARDEN_FOLDER')?->getValue()   ?? '');
+        $folder = (string) ($this->configFieldsInternal->getFieldByCode('VAULTWARDEN_FOLDER')?->getValue()   ?? 'MultiFlexi');
 
-        if ($url === '' || $email === '' || $pass === '') {
-            $missing = array_keys(array_filter([
-                'VAULTWARDEN_URL'      => $url   === '',
-                'VAULTWARDEN_EMAIL'    => $email === '',
-                'VAULTWARDEN_PASSWORD' => $pass  === '',
-            ]));
+        $missing = array_keys(array_filter([
+            'VAULTWARDEN_URL'      => $url   === '',
+            'VAULTWARDEN_EMAIL'    => $email === '',
+            'VAULTWARDEN_PASSWORD' => $pass  === '',
+        ]));
 
+        if ($missing !== []) {
             return new \MultiFlexi\CredentialCheckResult(
                 \MultiFlexi\CredentialState::Misconfigured,
                 sprintf(_('Required fields not set: %s'), implode(', ', $missing)),
@@ -99,10 +99,12 @@ class VaultWarden extends \MultiFlexi\CredentialProtoType implements \MultiFlexi
             );
         }
 
+        $this->configureServer($url);
+
         try {
             $delegate = new \MultiFlexi\BitwardenServiceDelegate($email, $pass, $url);
             $service  = new \Jalismrs\Bitwarden\BitwardenService($delegate);
-            $items    = $service->searchItems($folder ?: 'MultiFlexi');
+            $items    = $service->searchItems($folder);
         } catch (\Throwable $e) {
             $msg = strtolower($e->getMessage());
 
@@ -127,7 +129,11 @@ class VaultWarden extends \MultiFlexi\CredentialProtoType implements \MultiFlexi
             '',
             time(),
             300,
-            ['items' => (string) \count($items)],
+            [
+                _('Server') => $url,
+                _('Folder') => $folder,
+                _('Items')  => (string) \count($items),
+            ],
         );
     }
 
@@ -135,13 +141,12 @@ class VaultWarden extends \MultiFlexi\CredentialProtoType implements \MultiFlexi
     {
         $loaded = parent::load($credTypeId);
 
-        // Načtení položek z VaultWarden
-        $vaultwardenUrl = $this->configFieldsInternal->getFieldByCode('VAULTWARDEN_URL')->getValue();
-        $vaultwardenEmail = $this->configFieldsInternal->getFieldByCode('VAULTWARDEN_EMAIL')->getValue();
-        $vaultwardenPassword = $this->configFieldsInternal->getFieldByCode('VAULTWARDEN_PASSWORD')->getValue();
-        $vaultwardenFolder = $this->configFieldsInternal->getFieldByCode('VAULTWARDEN_FOLDER')->getValue();
+        $url      = (string) ($this->configFieldsInternal->getFieldByCode('VAULTWARDEN_URL')?->getValue()      ?? '');
+        $email    = (string) ($this->configFieldsInternal->getFieldByCode('VAULTWARDEN_EMAIL')?->getValue()    ?? '');
+        $password = (string) ($this->configFieldsInternal->getFieldByCode('VAULTWARDEN_PASSWORD')?->getValue() ?? '');
+        $folder   = (string) ($this->configFieldsInternal->getFieldByCode('VAULTWARDEN_FOLDER')?->getValue()   ?? '');
 
-        if ($vaultwardenUrl && $vaultwardenEmail && $vaultwardenPassword && $vaultwardenFolder) {
+        if ($url !== '' && $email !== '' && $password !== '' && $folder !== '') {
             $this->query();
         } else {
             $this->addStatusMessage(_('Missing required fields for VaultWarden'), 'warning');
@@ -151,47 +156,72 @@ class VaultWarden extends \MultiFlexi\CredentialProtoType implements \MultiFlexi
     }
 
     /**
-     * Query VaultWarden credential values.
+     * Populate configFieldsProvided from VaultWarden vault items.
      *
-     * @param bool $checkOnly If true, only check if secrets can be obtained (do not populate values)
+     * Each vault item in the configured folder yields two env-style fields:
+     *   <ITEM_NAME>_USERNAME and <ITEM_NAME>_PASSWORD.
      */
-    public function query(bool $checkOnly = false): \MultiFlexi\ConfigFields
+    public function query(): \MultiFlexi\ConfigFields
     {
-        // Získání hodnot z VaultWarden pouze pokud nejsou checkOnly
-        $vaultwardenUrl = $this->configFieldsInternal->getFieldByCode('VAULTWARDEN_URL')->getValue();
-        $vaultwardenEmail = $this->configFieldsInternal->getFieldByCode('VAULTWARDEN_EMAIL')->getValue();
-        $vaultwardenPassword = $this->configFieldsInternal->getFieldByCode('VAULTWARDEN_PASSWORD')->getValue();
-        $vaultwardenFolder = $this->configFieldsInternal->getFieldByCode('VAULTWARDEN_FOLDER')->getValue();
+        $url    = (string) ($this->configFieldsInternal->getFieldByCode('VAULTWARDEN_URL')?->getValue()      ?? '');
+        $email  = (string) ($this->configFieldsInternal->getFieldByCode('VAULTWARDEN_EMAIL')?->getValue()    ?? '');
+        $pass   = (string) ($this->configFieldsInternal->getFieldByCode('VAULTWARDEN_PASSWORD')?->getValue() ?? '');
+        $folder = (string) ($this->configFieldsInternal->getFieldByCode('VAULTWARDEN_FOLDER')?->getValue()   ?? 'MultiFlexi');
 
-        if ($vaultwardenUrl && $vaultwardenEmail && $vaultwardenPassword && $vaultwardenFolder) {
-            if ($checkOnly) {
-                // Zde pouze ověřit, že lze získat tajemství (např. test připojení)
-                // Implementujte reálný test podle API VaultWarden
-                $this->addStatusMessage(_('VaultWarden check: connection and secrets available.'), 'success');
-
-                return $this->configFieldsProvided;
-            }
-
-            // Use Bitwarden service to get items
-            $delegate = new \MultiFlexi\BitwardenServiceDelegate($vaultwardenEmail, $vaultwardenPassword, $vaultwardenUrl);
-            $service = new \Jalismrs\Bitwarden\BitwardenService($delegate);
-            $items = $service->searchItems($this->configFieldsInternal->getFieldByCode('VAULTWARDEN_FOLDER')->getValue());
-
-            foreach ($items as $item) {
-                $baseName = strtoupper(str_replace(' ', '_', $item->getName()));
-
-                if ($item->getLogin() && $item->getLogin()->getUsername()) {
-                    $this->configFieldsProvided->addField(new \MultiFlexi\ConfigField($baseName.'_USERNAME', 'string', $item->getName().' Username', $item->getName().' Username', $item->getLogin()->getUsername()));
-                }
-
-                if ($item->getLogin() && $item->getLogin()->getPassword()) {
-                    $this->configFieldsProvided->addField(new \MultiFlexi\ConfigField($baseName.'_PASSWORD', 'string', $item->getName().' Password', $item->getName().' Password', $item->getLogin()->getPassword()));
-                }
-            }
-        } else {
+        if ($url === '' || $email === '' || $pass === '') {
             $this->addStatusMessage(_('Missing required fields for VaultWarden'), 'warning');
+
+            return $this->configFieldsProvided;
+        }
+
+        $this->configureServer($url);
+
+        $delegate = new \MultiFlexi\BitwardenServiceDelegate($email, $pass, $url);
+        $service  = new \Jalismrs\Bitwarden\BitwardenService($delegate);
+        $items    = $service->searchItems($folder);
+
+        foreach ($items as $item) {
+            $baseName = strtoupper(str_replace([' ', '-'], '_', $item->getName()));
+            $login    = $item->getLogin();
+
+            if ($login !== null && $login->getUsername() !== null) {
+                $this->configFieldsProvided->addField(new \MultiFlexi\ConfigField(
+                    $baseName.'_USERNAME',
+                    'string',
+                    $item->getName().' '._('Username'),
+                    $item->getName().' '._('Username'),
+                    $login->getUsername(),
+                ));
+            }
+
+            if ($login !== null && $login->getPassword() !== null) {
+                $this->configFieldsProvided->addField(new \MultiFlexi\ConfigField(
+                    $baseName.'_PASSWORD',
+                    'password',
+                    $item->getName().' '._('Password'),
+                    $item->getName().' '._('Password'),
+                    $login->getPassword(),
+                ));
+            }
         }
 
         return $this->configFieldsProvided;
+    }
+
+    /**
+     * Configure the bw CLI to point at the correct vaultwarden server.
+     *
+     * The jalismrs/bitwarden-php library drives the bw CLI, which stores its
+     * server URL in its own config. We set it here before every authentication
+     * attempt so that custom (non-bitwarden.com) servers work correctly.
+     */
+    private function configureServer(string $url): void
+    {
+        if ($url === '') {
+            return;
+        }
+
+        $process = new \Symfony\Component\Process\Process(['bw', 'config', 'server', $url]);
+        $process->run();
     }
 }
