@@ -1,7 +1,6 @@
 vendor/
 .build/
 .phpunit.cache/
-composer.lock
 debian/debhelper-build-stamp
 debian/*.debhelper
 debian/*.debhelper.log
