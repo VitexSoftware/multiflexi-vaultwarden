@@ -1,4 +1,5 @@
 # multiflexi-vaultwarden
+![Packaging: deb](https://img.shields.io/badge/packaging-.deb-red?logo=debian&logoColor=white)
 
 VaultWarden/Bitwarden secrets support for [MultiFlexi](https://multiflexi.eu).
 
