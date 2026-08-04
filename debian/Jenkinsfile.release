@@ -1,6 +1,7 @@
 #!groovy
 
-String[] distributions = ['debian:bookworm', 'debian:trixie', 'ubuntu:jammy', 'ubuntu:noble']
+// bookworm dropped: php-jalismrs-bitwarden requires php-symfony-process >= 6.0, unavailable on bookworm
+String[] distributions = ['debian:trixie', 'ubuntu:jammy', 'ubuntu:noble']
 
 String vendor = 'vitexsoftware'
 String imagePrefix = 'multiflexi-'

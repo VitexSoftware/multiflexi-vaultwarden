@@ -3,7 +3,7 @@
 // Current version of this Pipeline https://github.com/VitexSoftware/BuildImages/blob/main/Test/Jenkinsfile
 
 String[] distributions = [
-			'debian:bookworm',
+//			'debian:bookworm', // php-jalismrs-bitwarden requires php-symfony-process >= 6.0, unavailable on bookworm
 			'debian:trixie',
 //			'debian:forky',    // multiflexi-cli uninstallable: php-symfony-dependency-injection has no choices in forky repo
 //			'ubuntu:jammy',    // postinst PHP Fatal error: Symfony/Polyfill/Php80/autoload.php not found (path incompatibility)
